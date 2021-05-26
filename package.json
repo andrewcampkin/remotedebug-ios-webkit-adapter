@@ -5,7 +5,10 @@
   "bin": {
     "remotedebug_ios_webkit_adapter": "./out/index.js"
   },
-  "main": "out/server.js",
+  "main": "out/main.js",
+  "files": [
+    "out"
+  ],
   "scripts": {
     "start": "gulp build && node out/index.js -p 9221",
     "build": "gulp build",
