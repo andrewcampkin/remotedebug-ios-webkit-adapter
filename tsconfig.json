@@ -3,13 +3,9 @@
     "module": "commonjs",
     "resolveJsonModule": true,
     "target": "ES2016",
-    "types": [
-        "node"
-    ],
+    "declaration": true,
+    "types": ["node"],
     "sourceMap": true
   },
-  "exclude": [
-    "src/**/*.json",
-    "node_modules"
-  ]
+  "exclude": ["src/**/*.json", "node_modules"]
 }
