@@ -18,7 +18,7 @@ export class Adapter extends EventEmitter {
     protected _proxyUrl: string;
     protected _options: IAdapterOptions;
     protected _url: string;
-    protected _proxyProc: ChildProcess;
+    protected _proxyProc: ChildProcess | undefined;
     protected _targetMap: Map<string, Target>;
     protected _targetIdToTargetDataMap: Map<string, ITarget>;
 
@@ -64,7 +64,7 @@ export class Adapter extends EventEmitter {
 
         return this.spawnProcess(
             this._options.proxyExePath,
-            this._options.proxyExeArgs
+            this._options.proxyExeArgs ?? []
         );
     }
 
@@ -73,7 +73,7 @@ export class Adapter extends EventEmitter {
         if (this._proxyProc) {
             // Terminate the proxy process
             this._proxyProc.kill("SIGTERM");
-            this._proxyProc = null;
+            this._proxyProc = undefined;
         }
     }
 
@@ -100,21 +100,21 @@ export class Adapter extends EventEmitter {
         });
     }
 
-    public connectTo(targetId: string, wsFrom: WebSocket): Target {
+    public connectTo(targetId: string, wsFrom: WebSocket): Target | undefined {
         debug(`adapter.connectTo`)(`targetId=${targetId}`);
         if (!this._targetIdToTargetDataMap.has(targetId)) {
             Logger.error(`No endpoint url found for id ${targetId}`);
-            return null;
+            return;
         } else if (this._targetMap.has(targetId)) {
             debug(`Existing target found for id ${targetId}`);
             const existingTarget = this._targetMap.get(targetId);
-            existingTarget.updateClient(wsFrom);
+            existingTarget?.updateClient(wsFrom);
             return existingTarget;
         }
 
         const targetData = this._targetIdToTargetDataMap.get(targetId);
         const target = new Target(targetId, targetData);
-        target.connectTo(targetData.webSocketDebuggerUrl, wsFrom);
+        targetData && target.connectTo(targetData.webSocketDebuggerUrl, wsFrom);
 
         // Store the tools websocket for this target
         this._targetMap.set(targetId, target);
@@ -132,7 +132,7 @@ export class Adapter extends EventEmitter {
             return;
         }
 
-        this._targetMap.get(targetId).forward(message);
+        this._targetMap.get(targetId)?.forward(message);
     }
 
     public forceRefresh() {
@@ -151,7 +151,7 @@ export class Adapter extends EventEmitter {
     }
 
     protected setTargetInfo(t: ITarget, metadata?: any): ITarget {
-        debug("adapter.setTargetInfo", t, metadata);
+        debug("adapter.setTargetInfo")(t, metadata);
 
         // Ensure there is a valid id
         const id: string = t.id || t.webSocketDebuggerUrl;
@@ -180,7 +180,7 @@ export class Adapter extends EventEmitter {
         process: ChildProcess,
         path: string,
         args: string[]
-    ): Promise<ChildProcess> {
+    ): Promise<ChildProcess | undefined> {
         debug("adapter.refreshProcess");
         process.kill("SIGTERM");
         return this.spawnProcess(path, args);
@@ -189,7 +189,7 @@ export class Adapter extends EventEmitter {
     protected spawnProcess(
         path: string,
         args: string[]
-    ): Promise<ChildProcess> {
+    ): Promise<ChildProcess | undefined> {
         debug(`adapter.spawnProcess, path=${path}`);
 
         return new Promise((resolve, reject) => {
@@ -214,11 +214,11 @@ export class Adapter extends EventEmitter {
                 reject(`adapter.spawnProcess.close, code=${code}`);
             });
 
-            this._proxyProc.stdout.on("data", (data) => {
+            this._proxyProc.stdout?.on("data", (data) => {
                 debug(`adapter.spawnProcess.stdout, data=${data.toString()}`);
             });
 
-            this._proxyProc.stderr.on("data", (data) => {
+            this._proxyProc.stderr?.on("data", (data) => {
                 debug(`adapter.spawnProcess.stderr, data=${data.toString()}`);
             });
 

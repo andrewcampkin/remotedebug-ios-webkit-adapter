@@ -5,7 +5,9 @@
     "target": "ES2016",
     "declaration": true,
     "types": ["node"],
-    "sourceMap": true
+    "sourceMap": true,
+    "strict": true,
+    "noImplicitAny": true
   },
   "exclude": ["src/**/*.json", "node_modules"]
 }

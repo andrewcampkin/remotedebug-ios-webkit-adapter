@@ -2,16 +2,18 @@
 // Copyright (C) Microsoft. All rights reserved.
 //
 
-import { IOSProtocol } from './ios';
-import { Target } from '../target';
+import { IOSProtocol } from "./ios";
+import { Target } from "../target";
 
 export class IOS9Protocol extends IOSProtocol {
-
     constructor(target: Target) {
         super(target);
     }
 
-    protected mapSelectorList (selectorList): void {
+    protected mapSelectorList(selectorList: {
+        range: any;
+        selectors: any[];
+    }): void {
         const range = selectorList.range;
 
         for (let i = 0; i < selectorList.selectors.length; i++) {

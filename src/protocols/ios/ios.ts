@@ -28,11 +28,11 @@ export abstract class IOSProtocol extends ProtocolAdapter {
     public static SEPARATOR: string = ": ";
 
     protected _styleMap: Map<string, any>;
-    protected _isEvaluating: boolean;
-    protected _lastScriptEval: string;
-    protected _lastNodeId: number;
-    protected _lastPageExecutionContextId: number;
-    protected _screencastSession: ScreencastSession;
+    protected _isEvaluating: boolean | undefined;
+    protected _lastScriptEval: string | undefined;
+    protected _lastNodeId: number | undefined;
+    protected _lastPageExecutionContextId: number | undefined;
+    protected _screencastSession: ScreencastSession | null | undefined;
 
     constructor(target: Target) {
         super(target);
@@ -559,15 +559,22 @@ export abstract class IOSProtocol extends ProtocolAdapter {
                 );
             })
             .then((result) => {
-                const mappedListeners = result.listeners.map((listener) => {
-                    return {
-                        type: listener.type,
-                        useCapture: listener.useCapture,
-                        passive: false, // iOS doesn't support this property, http://compatibility.remotedebug.org/DOM/Safari%20iOS%209.3/types/EventListener,
-                        location: listener.location,
-                        hander: listener.hander,
-                    };
-                });
+                const mappedListeners = result.listeners.map(
+                    (listener: {
+                        type: any;
+                        useCapture: any;
+                        location: any;
+                        hander: any;
+                    }) => {
+                        return {
+                            type: listener.type,
+                            useCapture: listener.useCapture,
+                            passive: false, // iOS doesn't support this property, http://compatibility.remotedebug.org/DOM/Safari%20iOS%209.3/types/EventListener,
+                            location: listener.location,
+                            hander: listener.hander,
+                        };
+                    }
+                );
 
                 const mappedResult = {
                     listeners: mappedListeners,
@@ -846,13 +853,20 @@ export abstract class IOSProtocol extends ProtocolAdapter {
         });
     }
 
-    protected mapSelectorList(selectorList): void {
+    protected mapSelectorList(selectorList: any): void {
         // Each iOS version needs to map this differently
     }
 
-    protected mapRule(cssRule): void {
+    protected mapRule(cssRule: {
+        styleSheetId: any;
+        ruleId?: { styleSheetId: any };
+        selectorList: any;
+        style: any;
+        origin: any;
+        sourceLine: any;
+    }): void {
         if ("ruleId" in cssRule) {
-            cssRule.styleSheetId = cssRule.ruleId.styleSheetId;
+            cssRule.styleSheetId = cssRule.ruleId?.styleSheetId;
             delete cssRule.ruleId;
         }
 
@@ -862,7 +876,20 @@ export abstract class IOSProtocol extends ProtocolAdapter {
         delete cssRule.sourceLine;
     }
 
-    protected mapStyle(cssStyle, ruleOrigin): void {
+    protected mapStyle(
+        cssStyle: {
+            cssText: string;
+            range: IRange;
+            cssProperties: any[];
+            styleSheetId: any;
+            styleId?: { styleSheetId: any };
+            sourceLine: any;
+            sourceURL: any;
+            width: any;
+            height: any;
+        },
+        ruleOrigin: string
+    ): void {
         if (cssStyle.cssText) {
             const disabled = IOSProtocol.extractDisabledStyles(
                 cssStyle.cssText,
@@ -910,7 +937,7 @@ export abstract class IOSProtocol extends ProtocolAdapter {
         }
 
         if (ruleOrigin !== "user-agent") {
-            cssStyle.styleSheetId = cssStyle.styleId.styleSheetId;
+            cssStyle.styleSheetId = cssStyle.styleId?.styleSheetId;
             const styleKey = `${cssStyle.styleSheetId}_${JSON.stringify(
                 cssStyle.range
             )}`;
@@ -924,7 +951,12 @@ export abstract class IOSProtocol extends ProtocolAdapter {
         delete cssStyle.height;
     }
 
-    protected mapCssProperty(cssProperty): void {
+    protected mapCssProperty(cssProperty: {
+        status?: string;
+        disabled: boolean;
+        important: boolean;
+        priority: any;
+    }): void {
         if (cssProperty.status === "disabled") {
             cssProperty.disabled = true;
         } else if (cssProperty.status === "active") {
@@ -945,7 +977,7 @@ export abstract class IOSProtocol extends ProtocolAdapter {
         text: string,
         index: number,
         startRange?: IRange
-    ): { line: number; column: number } {
+    ): { line: number; column: number } | null {
         if (
             text === null ||
             typeof text === "undefined" ||
@@ -1013,7 +1045,7 @@ export abstract class IOSProtocol extends ProtocolAdapter {
                 const endIndex = index + IOSProtocol.END_COMMENT.length;
                 const startRange = IOSProtocol.getLineColumnFromIndex(
                     styleText,
-                    startIndex,
+                    startIndex ?? 0,
                     range
                 );
                 const endRange = IOSProtocol.getLineColumnFromIndex(
@@ -1023,12 +1055,12 @@ export abstract class IOSProtocol extends ProtocolAdapter {
                 );
 
                 const propertyItem: IDisabledStyle = {
-                    content: styleText.substring(startIndex, endIndex),
+                    content: styleText.substring(startIndex ?? 0, endIndex),
                     range: {
-                        startLine: startRange.line,
-                        startColumn: startRange.column,
-                        endLine: endRange.line,
-                        endColumn: endRange.column,
+                        startLine: startRange?.line || 0,
+                        startColumn: startRange?.column || 0,
+                        endLine: endRange?.line || 0,
+                        endColumn: endRange?.column || 0,
                     },
                 };
 

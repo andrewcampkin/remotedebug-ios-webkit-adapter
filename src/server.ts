@@ -7,7 +7,6 @@ import * as express from "express";
 import * as ws from "ws";
 import { Server as WebSocketServer } from "ws";
 import { EventEmitter } from "events";
-import { Logger } from "./logger";
 
 import { Adapter } from "./adapters/adapter";
 import { IOSAdapter } from "./adapters/iosAdapter";
@@ -17,13 +16,12 @@ import * as debug from "debug";
 // import { TestAdapter } from './adapters/testAdapter';
 
 export class ProxyServer extends EventEmitter {
-    private _hs: http.Server;
-    private _es: express.Application;
-    private _wss: WebSocketServer;
-    private _serverPort: number;
-    private _adapter: Adapter;
-    private _clients: Map<ws, string>;
-    private _targetFetcherInterval: NodeJS.Timer;
+    private _hs: http.Server | undefined | null;
+    private _es: express.Application | undefined;
+    private _wss: WebSocketServer | undefined;
+    private _serverPort: number | undefined;
+    private _adapter: Adapter | undefined;
+    private _targetFetcherInterval: NodeJS.Timer | undefined;
 
     constructor() {
         super();
@@ -31,9 +29,8 @@ export class ProxyServer extends EventEmitter {
 
     public async run(serverPort: number): Promise<number> {
         this._serverPort = serverPort;
-        this._clients = new Map<ws, string>();
 
-        debug("server.run, port=%s", serverPort);
+        debug("server.run")(serverPort);
 
         this._es = express();
         this._hs = http.createServer(this._es);
@@ -79,21 +76,19 @@ export class ProxyServer extends EventEmitter {
         }
 
         this.stopTargetFetcher();
-        this._adapter.stop();
+        this._adapter?.stop();
     }
 
     private startTargetFetcher(): void {
         debug("server.startTargetFetcher");
 
         let fetch = () => {
-            this._adapter.getTargets().then(
+            this._adapter?.getTargets().then(
                 (targets) => {
-                    debug(
-                        `server.startTargetFetcher.fetched.${targets.length}`
-                    );
+                    debug(`server.startTargetFetcher.fetched`)(targets.length);
                 },
                 (err) => {
-                    debug(`server.startTargetFetcher.error`, err``);
+                    debug(`server.startTargetFetcher.error`)(err);
                 }
             );
         };
@@ -112,36 +107,36 @@ export class ProxyServer extends EventEmitter {
     private setupHttpHandlers(): void {
         debug("server.setupHttpHandlers");
 
-        this._es.get("/", (req, res) => {
+        this._es?.get("/", (req, res) => {
             debug("server.http.endpoint/");
             res.json({
                 msg: "Hello from RemoteDebug iOS WebKit Adapter",
             });
         });
 
-        this._es.get("/refresh", (req, res) => {
-            this._adapter.forceRefresh();
+        this._es?.get("/refresh", (req, res) => {
+            this._adapter?.forceRefresh();
             this.emit("forceRefresh");
             res.json({
                 status: "ok",
             });
         });
 
-        this._es.get("/json", (req, res) => {
+        this._es?.get("/json", (req, res) => {
             debug("server.http.endpoint/json");
-            this._adapter.getTargets().then((targets) => {
+            this._adapter?.getTargets().then((targets) => {
                 res.json(targets);
             });
         });
 
-        this._es.get("/json/list", (req, res) => {
+        this._es?.get("/json/list", (req, res) => {
             debug("server.http.endpoint/json/list");
-            this._adapter.getTargets().then((targets) => {
+            this._adapter?.getTargets().then((targets) => {
                 res.json(targets);
             });
         });
 
-        this._es.get("/json/version", (req, res) => {
+        this._es?.get("/json/version", (req, res) => {
             debug("server.http.endpoint/json/version");
             res.json({
                 Browser: "Safari/RemoteDebug iOS Webkit Adapter",
@@ -153,7 +148,7 @@ export class ProxyServer extends EventEmitter {
             });
         });
 
-        this._es.get("/json/protocol", (req, res) => {
+        this._es?.get("/json/protocol", (req, res) => {
             debug("server.http.endpoint/json/protocol");
             res.json();
         });
@@ -167,13 +162,13 @@ export class ProxyServer extends EventEmitter {
         let connection = <EventEmitter>websocket;
 
         try {
-            this._adapter.connectTo(url, websocket);
+            url && this._adapter?.connectTo(url, websocket);
         } catch (err) {
             debug(`server.onWSSConnection`)(err);
         }
 
         connection.on("message", (msg) => {
-            this._adapter.forwardTo(url, msg);
+            url && this._adapter?.forwardTo(url, msg);
         });
     }
 }

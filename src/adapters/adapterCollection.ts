@@ -2,11 +2,11 @@
 // Copyright (C) Microsoft. All rights reserved.
 //
 
-import * as WebSocket from 'ws';
-import { ITarget, IAdapterOptions } from './adapterInterfaces';
-import { Adapter } from './adapter';
-import { Target } from '../protocols/target';
-import { debug } from '../logger';
+import * as WebSocket from "ws";
+import { ITarget, IAdapterOptions } from "./adapterInterfaces";
+import { Adapter } from "./adapter";
+import { Target } from "../protocols/target";
+import { debug } from "../logger";
 
 export class AdapterCollection extends Adapter {
     protected _adapters: Map<string, Adapter>;
@@ -53,14 +53,17 @@ export class AdapterCollection extends Adapter {
             this._adapters.forEach((adapter) => {
                 let targetMetadata = null;
                 if (metadata) {
-                    targetMetadata = (metadata.constructor === Array ? metadata[index] : metadata);
+                    targetMetadata =
+                        metadata.constructor === Array
+                            ? metadata[index]
+                            : metadata;
                 }
                 promises.push(adapter.getTargets(targetMetadata));
                 index++;
             });
 
             Promise.all(promises).then((results: ITarget[][]) => {
-                let allTargets = [];
+                let allTargets: ITarget[] = [];
                 results.forEach((targets) => {
                     allTargets = allTargets.concat(targets);
                 });
@@ -69,13 +72,15 @@ export class AdapterCollection extends Adapter {
         });
     }
 
-    public connectTo(url: string, wsFrom: WebSocket): Target {
+    public connectTo(url: string, wsFrom: WebSocket): Target | undefined {
         debug(`adapterCollection.connectTo, url=${url}`);
         const id = this.getWebSocketId(url);
 
-        let target: Target = null;
+        let target: Target | undefined;
         if (this._adapters.has(id.adapterId)) {
-            target = this._adapters.get(id.adapterId).connectTo(id.targetId, wsFrom);
+            target = this._adapters
+                ?.get(id.adapterId)
+                ?.connectTo(id.targetId, wsFrom);
         }
 
         return target;
@@ -86,13 +91,16 @@ export class AdapterCollection extends Adapter {
         const id = this.getWebSocketId(url);
 
         if (this._adapters.has(id.adapterId)) {
-            this._adapters.get(id.adapterId).forwardTo(id.targetId, message);
+            this._adapters.get(id.adapterId)?.forwardTo(id.targetId, message);
         }
     }
 
-    private getWebSocketId(url: string): { adapterId: string, targetId: string } {
+    private getWebSocketId(url: string): {
+        adapterId: string;
+        targetId: string;
+    } {
         debug(`adapterCollection.getWebSocketId, url=${url}`);
-        const index = url.indexOf('/', 1);
+        const index = url.indexOf("/", 1);
         const adapterId = url.substr(0, index);
         const targetId = url.substr(index + 1);
 

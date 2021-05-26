@@ -42,12 +42,12 @@ export class IOSAdapter extends AdapterCollection {
     public getTargets(): Promise<ITarget[]> {
         debug(`iOSAdapter.getTargets`);
 
-        return new Promise((resolve) => {
+        return new Promise((resolve: (value: IIOSDeviceTarget[]) => void) => {
             request(
                 this._url,
                 (error: any, response: http.IncomingMessage, body: any) => {
                     if (error) {
-                        resolve([]);
+                        resolve([] as IIOSDeviceTarget[]);
                         return;
                     }
 
@@ -112,7 +112,7 @@ export class IOSAdapter extends AdapterCollection {
         }
 
         if (!this._protocolMap.has(target)) {
-            const version = (target.data.metadata as IIOSDeviceTarget).version;
+            const version = (target.data?.metadata as IIOSDeviceTarget).version;
             const protocol = this.getProtocolFor(version, target);
             this._protocolMap.set(target, protocol);
         }
@@ -121,9 +121,9 @@ export class IOSAdapter extends AdapterCollection {
 
     public static async getProxySettings(
         args: any
-    ): Promise<IIOSProxySettings | string> {
+    ): Promise<IIOSProxySettings | string | null> {
         debug(`iOSAdapter.getProxySettings`);
-        let settings: IIOSProxySettings = null;
+        let settings: IIOSProxySettings | null = null;
 
         // Check that the proxy exists
         const proxyPath = await IOSAdapter.getProxyPath();
@@ -141,6 +141,10 @@ export class IOSAdapter extends AdapterCollection {
                 (proxyPort + 101),
         ];
 
+        if (!proxyPath) {
+            return null;
+        }
+
         settings = {
             proxyPath: proxyPath,
             proxyPort: proxyPort,
@@ -150,7 +154,7 @@ export class IOSAdapter extends AdapterCollection {
         return settings;
     }
 
-    private static getProxyPath(): Promise<string> {
+    private static getProxyPath(): Promise<string | undefined> {
         debug(`iOSAdapter.getProxyPath`);
         return new Promise((resolve, reject) => {
             if (os.platform() === "win32") {
