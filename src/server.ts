@@ -79,6 +79,10 @@ export class ProxyServer extends EventEmitter {
         this._adapter?.stop();
     }
 
+    public getAdapter(): Adapter | undefined {
+        return this._adapter;
+    }
+
     private startTargetFetcher(): void {
         debug("server.startTargetFetcher");
 
