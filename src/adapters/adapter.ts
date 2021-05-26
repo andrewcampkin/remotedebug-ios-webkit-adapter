@@ -7,11 +7,14 @@ import * as http from "http";
 import * as WebSocket from "ws";
 import { EventEmitter } from "events";
 import { spawn, ChildProcess } from "child_process";
-import { ITarget, IAdapterOptions } from "./adapterInterfaces";
+import {
+    ITarget,
+    IAdapterOptions,
+    IIOSDeviceTarget,
+} from "./adapterInterfaces";
 import { Target } from "../protocols/target";
 import { Logger } from "../logger";
 import * as debug from "debug";
-import { IIOSDeviceTarget } from "../main";
 
 export class Adapter extends EventEmitter {
     protected _id: string;
@@ -93,7 +96,12 @@ export class Adapter extends EventEmitter {
                     const targets: ITarget[] = [];
                     const rawTargets: ITarget[] = JSON.parse(body);
                     rawTargets.forEach((t: ITarget) => {
-                        targets.push(this.setTargetInfo(t, metadata));
+                        if (
+                            !("deviceId" in metadata) ||
+                            metadata.deviceId !== t.metadata?.deviceId
+                        ) {
+                            targets.push(this.setTargetInfo(t, metadata));
+                        }
                     });
 
                     resolve(targets);
