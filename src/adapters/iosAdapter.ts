@@ -33,6 +33,7 @@ export class IOSAdapter extends AdapterCollection {
             port: proxySettings.proxyPort,
             proxyExePath: proxySettings.proxyPath,
             proxyExeArgs: proxySettings.proxyArgs,
+            baseUrl: proxySettings.proxyHost,
         });
 
         this._proxySettings = proxySettings;
@@ -120,13 +121,17 @@ export class IOSAdapter extends AdapterCollection {
     }
 
     public static async getProxySettings(
-        args: any
+        args: Partial<IIOSProxySettings>
     ): Promise<IIOSProxySettings | string | null> {
         debug(`iOSAdapter.getProxySettings`);
         let settings: IIOSProxySettings | null = null;
 
         // Check that the proxy exists
         const proxyPath = await IOSAdapter.getProxyPath();
+
+        if (!proxyPath || !args.proxyPort) {
+            return null;
+        }
 
         // Start with remote debugging enabled
         // Use default parameters for the ios_webkit_debug_proxy executable
@@ -141,11 +146,8 @@ export class IOSAdapter extends AdapterCollection {
                 (proxyPort + 101),
         ];
 
-        if (!proxyPath) {
-            return null;
-        }
-
         settings = {
+            ...args,
             proxyPath: proxyPath,
             proxyPort: proxyPort,
             proxyArgs: proxyArgs,

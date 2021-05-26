@@ -20,6 +20,7 @@ export class ProxyServer extends EventEmitter {
     private _es: express.Application | undefined;
     private _wss: WebSocketServer | undefined;
     private _serverPort: number | undefined;
+    private _serverHost: string | undefined;
     private _adapter: Adapter | undefined;
     private _targetFetcherInterval: NodeJS.Timer | undefined;
 
@@ -27,10 +28,15 @@ export class ProxyServer extends EventEmitter {
         super();
     }
 
-    public async run(serverPort: number): Promise<number> {
+    public async run(
+        serverPort: number,
+        serverHost?: string
+    ): Promise<{ port: number; host: string }> {
         this._serverPort = serverPort;
+        const host = serverHost ?? "localhost";
+        this._serverHost = host;
 
-        debug("server.run")(serverPort);
+        debug("server.run")(serverPort, this._serverHost);
 
         this._es = express();
         this._hs = http.createServer(this._es);
@@ -46,14 +52,13 @@ export class ProxyServer extends EventEmitter {
         const port = (<AddressInfo>this._hs.address()).port;
 
         const settings = await IOSAdapter.getProxySettings({
-            proxyPath: null,
             proxyPort: port + 100,
-            proxyArgs: null,
+            proxyHost: host,
         });
 
         this._adapter = new IOSAdapter(
             `/ios`,
-            `ws://localhost:${port}`,
+            `ws://${host}:${port}`,
             <IIOSProxySettings>settings
         );
 
@@ -63,7 +68,7 @@ export class ProxyServer extends EventEmitter {
                 this.startTargetFetcher();
             })
             .then(() => {
-                return port;
+                return { port, host };
             });
     }
 
