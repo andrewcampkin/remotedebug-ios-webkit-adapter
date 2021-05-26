@@ -11,7 +11,7 @@ import { ITarget, IAdapterOptions } from "./adapterInterfaces";
 import { Target } from "../protocols/target";
 import { Logger } from "../logger";
 import * as debug from "debug";
-import { IIOSDeviceTarget } from "../../out/main";
+import { IIOSDeviceTarget } from "../main";
 
 export class Adapter extends EventEmitter {
     protected _id: string;
