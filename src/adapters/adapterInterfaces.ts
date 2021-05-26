@@ -23,6 +23,7 @@ export interface IAdapterOptions {
     port?: number;
     proxyExePath?: string;
     proxyExeArgs?: string[];
+    frontendUrl?: string;
 }
 
 export interface IIOSDeviceTarget {

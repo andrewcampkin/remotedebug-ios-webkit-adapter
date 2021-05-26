@@ -28,12 +28,17 @@ export class IOSAdapter extends AdapterCollection {
     private _proxySettings: IIOSProxySettings;
     private _protocolMap: Map<Target, IOSProtocol>;
 
-    constructor(id: string, socket: string, proxySettings: IIOSProxySettings) {
+    constructor(
+        id: string,
+        socket: string,
+        proxySettings: IIOSProxySettings,
+        frontEndUrl?: string
+    ) {
         super(id, socket, {
             port: proxySettings.proxyPort,
             proxyExePath: proxySettings.proxyPath,
             proxyExeArgs: proxySettings.proxyArgs,
-            baseUrl: proxySettings.proxyHost,
+            frontendUrl: frontEndUrl,
         });
 
         this._proxySettings = proxySettings;
@@ -87,7 +92,10 @@ export class IOSAdapter extends AdapterCollection {
                             const adapter = new Adapter(
                                 adapterId,
                                 this._proxyUrl,
-                                { port: port }
+                                {
+                                    port: port,
+                                    frontendUrl: this._options.frontendUrl,
+                                }
                             );
                             adapter.start();
                             adapter.on("socketClosed", (id) => {

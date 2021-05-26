@@ -30,13 +30,14 @@ export class ProxyServer extends EventEmitter {
 
     public async run(
         serverPort: number,
-        serverHost?: string
-    ): Promise<{ port: number; host: string }> {
+        serverHost?: string,
+        frontendUrl?: string
+    ): Promise<{ port: number; host: string; frontendUrl?: string }> {
         this._serverPort = serverPort;
         const host = serverHost ?? "localhost";
         this._serverHost = host;
 
-        debug("server.run")(serverPort, this._serverHost);
+        debug("server.run")(serverPort, this._serverHost, frontendUrl);
 
         this._es = express();
         this._hs = http.createServer(this._es);
@@ -59,7 +60,8 @@ export class ProxyServer extends EventEmitter {
         this._adapter = new IOSAdapter(
             `/ios`,
             `ws://${host}:${port}`,
-            <IIOSProxySettings>settings
+            <IIOSProxySettings>settings,
+            frontendUrl
         );
 
         return this._adapter
@@ -68,7 +70,7 @@ export class ProxyServer extends EventEmitter {
                 this.startTargetFetcher();
             })
             .then(() => {
-                return { port, host };
+                return { port, host, frontendUrl };
             });
     }
 

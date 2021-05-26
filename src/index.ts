@@ -7,12 +7,14 @@ import * as info from "../package.json";
 process.title = "remotedebug-ios-webkit-adapter";
 
 let argv = optimist
-    .usage("Usage: $0 -p [num] -h [str]")
+    .usage("Usage: $0 -p [num] -h [str] -f [str]")
     .alias("p", "port")
     .alias("h", "host")
-    .describe("p", "the adapter listerning post")
+    .alias("f", "frontendUrl")
+    .describe("p", "the adapter listening post")
     .default("p", 9000)
-    .describe("h", "the adapter listerning host")
+    .describe("f", "the adapter devtools-frontend Url")
+    .describe("h", "the adapter listening host")
     .default("h", "127.0.0.1")
     .describe("version", "prints current version")
     .boolean("boolean").argv;
@@ -30,10 +32,10 @@ if (argv.help) {
 const server = new ProxyServer();
 
 server
-    .run(argv.port, argv.host)
-    .then(({ port, host }) => {
+    .run(argv.port, argv.host, argv.frontendUrl)
+    .then(({ port, host, frontendUrl }) => {
         console.log(
-            `remotedebug-ios-webkit-adapter is listening on port ${port} with host ${host}`
+            `remotedebug-ios-webkit-adapter is listening on port ${port} with host ${host} and devtools frontend url: ${frontendUrl}`
         );
     })
     .catch((err) => {

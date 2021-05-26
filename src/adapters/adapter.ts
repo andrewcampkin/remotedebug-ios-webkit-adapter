@@ -11,6 +11,7 @@ import { ITarget, IAdapterOptions } from "./adapterInterfaces";
 import { Target } from "../protocols/target";
 import { Logger } from "../logger";
 import * as debug from "debug";
+import { IIOSDeviceTarget } from "../../out/main";
 
 export class Adapter extends EventEmitter {
     protected _id: string;
@@ -30,6 +31,7 @@ export class Adapter extends EventEmitter {
         this._targetMap = new Map<string, Target>();
         this._targetIdToTargetDataMap = new Map<string, ITarget>();
 
+        options.frontendUrl ??= "http://127.0.0.1:9200/inspector.html";
         // Apply default options
         options.pollingInterval = options.pollingInterval || 3000;
         options.baseUrl = options.baseUrl || "http://127.0.0.1";
@@ -150,7 +152,7 @@ export class Adapter extends EventEmitter {
         }
     }
 
-    protected setTargetInfo(t: ITarget, metadata?: any): ITarget {
+    protected setTargetInfo(t: ITarget, metadata?: IIOSDeviceTarget): ITarget {
         debug("adapter.setTargetInfo")(t, metadata);
 
         // Ensure there is a valid id
@@ -171,7 +173,7 @@ export class Adapter extends EventEmitter {
         // Overwrite the real endpoint with the url of our proxy multiplexor
         t.webSocketDebuggerUrl = `${this._proxyUrl}${this._id}/${t.id}`;
         let wsUrl = `${this._proxyUrl.replace("ws://", "")}${this._id}/${t.id}`;
-        t.devtoolsFrontendUrl = `https://chrome-devtools-frontend.appspot.com/serve_file/@fcea73228632975e052eb90fcf6cd1752d3b42b4/inspector.html?experiments=true&remoteFrontend=screencast&ws=${wsUrl}`;
+        t.devtoolsFrontendUrl = `${this._options.frontendUrl}?experiments=true&remoteFrontend=screencast&ws=${wsUrl}`;
 
         return t;
     }
