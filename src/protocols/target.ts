@@ -2,10 +2,11 @@
 // Copyright (C) Microsoft. All rights reserved.
 //
 
-import * as WebSocket from 'ws';
-import { EventEmitter } from 'events';
-import { Logger, debug } from '../logger';
-import { ITarget } from '../adapters/adapterInterfaces';
+import * as WebSocket from "ws";
+import { EventEmitter } from "events";
+import { Logger, debug } from "../logger";
+import * as createDebug from "debug";
+import { ITarget } from "../adapters/adapterInterfaces";
 
 export class Target extends EventEmitter {
     private _data: ITarget;
@@ -16,7 +17,10 @@ export class Target extends EventEmitter {
     private _messageBuffer: string[];
     private _messageFilters: Map<string, ((msg: any) => Promise<any>)[]>;
     private _toolRequestMap: Map<number, string>;
-    private _adapterRequestMap: Map<number, { resolve: (any) => void, reject: (any) => void }>;
+    private _adapterRequestMap: Map<
+        number,
+        { resolve: (any) => void; reject: (any) => void }
+    >;
     private _requestId: number;
     private _id: string;
     private _targetBased: boolean;
@@ -26,9 +30,15 @@ export class Target extends EventEmitter {
         super();
         this._data = data;
         this._messageBuffer = [];
-        this._messageFilters = new Map<string, ((msg: any) => Promise<any>)[]>();
+        this._messageFilters = new Map<
+            string,
+            ((msg: any) => Promise<any>)[]
+        >();
         this._toolRequestMap = new Map<number, string>();
-        this._adapterRequestMap = new Map<number, { resolve: (any) => void, reject: (any) => void }>();
+        this._adapterRequestMap = new Map<
+            number,
+            { resolve: (any) => void; reject: (any) => void }
+        >();
         this._requestId = 0;
         this._targetBased = false;
         this._targetId = null;
@@ -60,29 +70,31 @@ export class Target extends EventEmitter {
 
         // Create a connection to the real websocket endpoint
         this._wsTarget = new WebSocket(url);
-        this._wsTarget.on('error', (err) => {
+        this._wsTarget.on("error", (err) => {
+            createDebug("socket.error")(err);
             Logger.error(err);
         });
 
-        this._wsTarget.on('message', (message) => {
+        this._wsTarget.on("message", (message) => {
             this.onMessageFromTarget(message);
         });
-        this._wsTarget.on('open', () => {
-            debug(`Connection established to ${url}`);
+        this._wsTarget.on("open", () => {
+            createDebug("socket.open")(`Connection established to ${url}`);
+            createDebug("socket.open")(this._wsTarget);
             this._isConnected = true;
             for (let i = 0; i < this._messageBuffer.length; i++) {
                 this.onMessageFromTools(this._messageBuffer[i]);
             }
             this._messageBuffer = [];
         });
-        this._wsTarget.on('close', () => {
-            debug('Socket is closed');
+        this._wsTarget.on("close", () => {
+            createDebug("socket.close")("Socket is closed");
         });
     }
 
     public forward(message: string): void {
         if (!this._wsTarget) {
-            Logger.error('No websocket endpoint found');
+            Logger.error("No websocket endpoint found");
             return;
         }
 
@@ -97,7 +109,10 @@ export class Target extends EventEmitter {
         this.connectTo(this._url, wsFrom);
     }
 
-    public addMessageFilter(method: string, filter: (msg: any) => Promise<any>): void {
+    public addMessageFilter(
+        method: string,
+        filter: (msg: any) => Promise<any>
+    ): void {
         if (!this._messageFilters.has(method)) {
             this._messageFilters.set(method, []);
         }
@@ -110,10 +125,13 @@ export class Target extends EventEmitter {
             const request = {
                 id: --this._requestId,
                 method: method,
-                params: params
+                params: params,
             };
 
-            this._adapterRequestMap.set(request.id, { resolve: resolve, reject: reject });
+            this._adapterRequestMap.set(request.id, {
+                resolve: resolve,
+                reject: reject,
+            });
             this.sendToTarget(JSON.stringify(request));
         });
     }
@@ -121,7 +139,7 @@ export class Target extends EventEmitter {
     public fireEventToTools(method: string, params: any): void {
         const response = {
             method: method,
-            params: params
+            params: params,
         };
 
         this.sendToTools(JSON.stringify(response));
@@ -130,7 +148,7 @@ export class Target extends EventEmitter {
     public fireResultToTools(id: number, params: any): void {
         const response = {
             id: id,
-            result: params
+            result: params,
         };
 
         this.sendToTools(JSON.stringify(response));
@@ -142,8 +160,9 @@ export class Target extends EventEmitter {
     }
 
     private onMessageFromTools(rawMessage: string): void {
+        createDebug("message.tools")(rawMessage);
         if (!this._isConnected) {
-            debug('Connection not yet open, buffering message.');
+            debug("Connection not yet open, buffering message.");
             this._messageBuffer.push(rawMessage);
             return;
         }
@@ -177,19 +196,20 @@ export class Target extends EventEmitter {
     }
 
     private onMessageFromTarget(rawMessage: string): void {
+        createDebug("message.raw")(rawMessage);
         let msg = JSON.parse(rawMessage);
 
         if (this._targetBased) {
             if (!msg.method || !msg.method.match(/^Target/)) {
                 return;
             }
-            if (msg.method === 'Target.dispatchMessageFromTarget') {
+            if (msg.method === "Target.dispatchMessageFromTarget") {
                 rawMessage = msg.params.message;
                 msg = JSON.parse(rawMessage);
             }
         }
 
-        if ('id' in msg) {
+        if ("id" in msg) {
             if (this._toolRequestMap.has(msg.id)) {
                 // Reply to tool request
                 let eventName = `target::${this._toolRequestMap.get(msg.id)}`;
@@ -197,8 +217,11 @@ export class Target extends EventEmitter {
 
                 this._toolRequestMap.delete(msg.id);
 
-                if ('error' in msg && this._messageFilters.has('target::error')) {
-                    eventName = 'target::error';
+                if (
+                    "error" in msg &&
+                    this._messageFilters.has("target::error")
+                ) {
+                    eventName = "target::error";
                 }
 
                 if (this._messageFilters.has(eventName)) {
@@ -223,12 +246,14 @@ export class Target extends EventEmitter {
                 const resultPromise = this._adapterRequestMap.get(msg.id);
                 this._adapterRequestMap.delete(msg.id);
 
-                if ('result' in msg) {
+                if ("result" in msg) {
                     resultPromise.resolve(msg.result);
-                } else if ('error' in msg) {
+                } else if ("error" in msg) {
                     resultPromise.reject(msg.error);
                 } else {
-                    Logger.error(`Unhandled type of request message from target ${rawMessage}`);
+                    Logger.error(
+                        `Unhandled type of request message from target ${rawMessage}`
+                    );
                 }
             } else {
                 Logger.error(`Unhandled message from target ${rawMessage}`);
@@ -258,7 +283,7 @@ export class Target extends EventEmitter {
     }
 
     private sendToTools(rawMessage: string): void {
-        debug(`sendToTools.${rawMessage}`);
+        createDebug("sendTo.tools")(rawMessage);
         // Make sure the tools socket can receive messages
         if (this.isSocketConnected(this._wsTools)) {
             this._wsTools.send(rawMessage);
@@ -266,21 +291,21 @@ export class Target extends EventEmitter {
     }
 
     private sendToTarget(rawMessage: string): void {
-        debug(`sendToTarget.${rawMessage}`);
+        createDebug("sendTo.target")(rawMessage);
         if (this._targetBased) {
             const message = JSON.parse(rawMessage);
             if (!message.method.match(/^Target/)) {
                 const newMessage = {
                     id: message.id,
-                    method: 'Target.sendMessageToTarget',
+                    method: "Target.sendMessageToTarget",
                     params: {
                         id: message.id,
                         message: JSON.stringify(message),
-                        targetId: this._targetId
-                    }
+                        targetId: this._targetId,
+                    },
                 };
                 rawMessage = JSON.stringify(newMessage);
-                debug(`sendToTarget.targeted.${rawMessage}`);
+                createDebug("sendTo.target.targeted")(rawMessage);
             }
         }
 
@@ -290,11 +315,11 @@ export class Target extends EventEmitter {
         } else {
             // The socket has closed, we should send this message up to the parent
             this._wsTarget = null;
-            this.emit('socketClosed', this._id);
+            this.emit("socketClosed", this._id);
         }
     }
 
     private isSocketConnected(ws: WebSocket): boolean {
-        return ws && (ws.readyState === WebSocket.OPEN);
+        return ws && ws.readyState === WebSocket.OPEN;
     }
 }

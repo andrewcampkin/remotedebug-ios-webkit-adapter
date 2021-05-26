@@ -6,7 +6,7 @@
     "remotedebug_ios_webkit_adapter": "./out/index.js"
   },
   "scripts": {
-    "start": "gulp build && node out/index.js",
+    "start": "gulp build && node out/index.js -p 9221",
     "build": "gulp build",
     "prepublish": "gulp build",
     "watch": "gulp watch",
