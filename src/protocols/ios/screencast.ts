@@ -2,6 +2,7 @@
 // Copyright (C) Microsoft. All rights reserved.
 //
 
+import debug = require("debug");
 import { Target } from "../target";
 
 export class ScreencastSession {
@@ -51,6 +52,7 @@ export class ScreencastSession {
                     '(window.innerWidth > 0 ? window.innerWidth : screen.width) + "," + (window.innerHeight > 0 ? window.innerHeight : screen.height) + "," + window.devicePixelRatio',
             })
             .then((msg) => {
+                debug("device")(JSON.stringify(msg));
                 const parts = msg.result.value.split(",");
                 this._deviceWidth = parseInt(parts[0], 10);
                 this._deviceHeight = parseInt(parts[1], 10);

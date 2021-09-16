@@ -3,7 +3,7 @@
   "productName": "RemoteDebug iOS WebKit Adapter",
   "version": "0.4.2",
   "bin": {
-    "remotedebug_ios_webkit_adapter": "./out/index.js"
+    "remotedebug_ios_webkit_adapter": "out/index.js"
   },
   "main": "out/main.js",
   "files": [
@@ -47,5 +47,23 @@
     "tslint": "^5.19.0",
     "typemoq": "^2.1.0",
     "typescript": "^4.2.4"
-  }
+  },
+  "description": "RemoteDebug is now superseeded by https://inspect.dev/ – a new developer tool for macOS and Windows to inspect and debug your web apps and websites in Safari and WebViews on iOS devices 🤯🎉🔥",
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nonVoid/remotedebug-ios-webkit-adapter.git"
+  },
+  "keywords": [
+    "ios",
+    "remote"
+  ],
+  "author": "Felix Weber",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nonVoid/remotedebug-ios-webkit-adapter/issues"
+  },
+  "homepage": "https://github.com/nonVoid/remotedebug-ios-webkit-adapter#readme"
 }
