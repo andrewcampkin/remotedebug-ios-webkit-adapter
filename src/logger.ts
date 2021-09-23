@@ -2,15 +2,16 @@
 // Copyright (C) Microsoft. All rights reserved.
 //
 
-import * as createDebug from 'debug';
+import * as createDebug from "debug";
 
 class LoggerUtil {
-
-    constructor() {
-    }
+    constructor() {}
 
     public log(msg: string): void {
-        console.log.apply(this, Array.prototype.slice.call(arguments));
+        console.log.apply<this, any[], void>(
+            this,
+            Array.prototype.slice.call(arguments)
+        );
     }
 
     public error(msg: string): void {
@@ -18,5 +19,5 @@ class LoggerUtil {
     }
 }
 
-export const debug = createDebug('remotedebug');
+export const debug = createDebug("remotedebug");
 export const Logger = new LoggerUtil();

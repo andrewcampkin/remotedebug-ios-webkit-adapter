@@ -1,5 +1,5 @@
-declare module 'mock-socket' {
-    export const Server;
-    export const WebSocket;
-    export const SocketIO;
+declare module "mock-socket" {
+    export const Server: any;
+    export const WebSocket: any;
+    export const SocketIO: any;
 }

@@ -3,10 +3,14 @@
   "productName": "RemoteDebug iOS WebKit Adapter",
   "version": "0.4.2",
   "bin": {
-    "remotedebug_ios_webkit_adapter": "./out/index.js"
+    "remotedebug_ios_webkit_adapter": "out/index.js"
   },
+  "main": "out/main.js",
+  "files": [
+    "out"
+  ],
   "scripts": {
-    "start": "gulp build && node out/index.js",
+    "start": "gulp build && node out/index.js -p 9221",
     "build": "gulp build",
     "prepublish": "gulp build",
     "watch": "gulp watch",
@@ -14,29 +18,52 @@
     "lint": "gulp lint"
   },
   "dependencies": {
+    "@types/ws": "^7.4.7",
     "child-process-promise": "^2.2.1",
     "debug": "^4.1.1",
     "express": "^4.17.1",
     "optimist": "^0.6.1",
-    "request": "^2.88.0",
+    "request": "^2.88.2",
     "which": "^1.3.1",
-    "ws": "^7.1.2"
+    "ws": "^7.5.5"
   },
   "devDependencies": {
-    "@types/express": "^4.17.1",
-    "@types/mocha": "^5.2.7",
-    "@types/optimist": "0.0.29",
+    "@types/child-process-promise": "^2.2.2",
+    "@types/debug": "^4.1.7",
+    "@types/express": "^4.17.13",
+    "@types/mocha": "^9.0.0",
+    "@types/optimist": "0.0.30",
+    "@types/request": "^2.48.7",
+    "@types/which": "^2.0.1",
     "fancy-log": "^1.3.3",
     "gulp": "^4.0.2",
-    "gulp-mocha": "^6.0.0",
+    "gulp-mocha": "^8.0.0",
     "gulp-sourcemaps": "^2.6.5",
     "gulp-tslint": "^8.1.4",
     "gulp-typescript": "^5.0.1",
-    "mocha": "^6.2.0",
+    "mocha": "^9.1.1",
     "mock-socket": "^3.0.1",
     "mockery": "^2.1.0",
     "tslint": "^5.19.0",
     "typemoq": "^2.1.0",
-    "typescript": "^3.5.3"
-  }
+    "typescript": "^4.2.4"
+  },
+  "description": "RemoteDebug is now superseeded by https://inspect.dev/ – a new developer tool for macOS and Windows to inspect and debug your web apps and websites in Safari and WebViews on iOS devices 🤯🎉🔥",
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nonVoid/remotedebug-ios-webkit-adapter.git"
+  },
+  "keywords": [
+    "ios",
+    "remote"
+  ],
+  "author": "Felix Weber",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nonVoid/remotedebug-ios-webkit-adapter/issues"
+  },
+  "homepage": "https://github.com/nonVoid/remotedebug-ios-webkit-adapter#readme"
 }

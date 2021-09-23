@@ -1,27 +1,22 @@
+"use strict";
 //
 // Copyright (C) Microsoft. All rights reserved.
 //
-
-import { IOSProtocol } from "./ios";
-import { Target } from "../target";
-
-export class IOS9Protocol extends IOSProtocol {
-    constructor(target: Target) {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.IOS9Protocol = void 0;
+const ios_1 = require("./ios");
+class IOS9Protocol extends ios_1.IOSProtocol {
+    constructor(target) {
         super(target);
     }
-
-    protected mapSelectorList(selectorList: {
-        range: any;
-        selectors: any[];
-    }): void {
+    mapSelectorList(selectorList) {
         const range = selectorList.range;
-
         for (let i = 0; i < selectorList.selectors.length; i++) {
             if (range !== undefined) {
                 selectorList.selectors[i].range = range;
             }
         }
-
         delete selectorList.range;
     }
 }
+exports.IOS9Protocol = IOS9Protocol;

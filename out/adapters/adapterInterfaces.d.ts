@@ -1,7 +1,3 @@
-//
-// Copyright (C) Microsoft. All rights reserved.
-//
-
 export interface ITarget {
     appId?: string;
     description: string;
@@ -15,7 +11,6 @@ export interface ITarget {
     adapterType: string;
     metadata?: IIOSDeviceTarget;
 }
-
 export interface IAdapterOptions {
     pollingInterval?: number;
     baseUrl?: string;
@@ -25,7 +20,6 @@ export interface IAdapterOptions {
     proxyExeArgs?: string[];
     frontendUrl?: string;
 }
-
 export interface IIOSDeviceTarget {
     deviceId: string;
     deviceName: string;
@@ -33,7 +27,6 @@ export interface IIOSDeviceTarget {
     url: string;
     version: string;
 }
-
 export interface IIOSProxySettings {
     proxyPath: string;
     proxyPort: number;

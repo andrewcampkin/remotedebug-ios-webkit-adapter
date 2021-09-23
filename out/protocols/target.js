@@ -1,79 +1,48 @@
+"use strict";
 //
 // Copyright (C) Microsoft. All rights reserved.
 //
-
-import * as WebSocket from "ws";
-import { EventEmitter } from "events";
-import { Logger, debug } from "../logger";
-import * as createDebug from "debug";
-import { ITarget } from "../adapters/adapterInterfaces";
-
-export class Target extends EventEmitter {
-    private _data: ITarget | undefined;
-    private _url: string | undefined;
-    private _wsTarget: WebSocket | undefined | null;
-    private _wsTools: WebSocket | undefined;
-    private _isConnected: boolean | undefined;
-    private _messageBuffer: string[];
-    private _messageFilters: Map<string, ((msg: any) => Promise<any>)[]>;
-    private _toolRequestMap: Map<number, string>;
-    private _adapterRequestMap: Map<
-        number,
-        { resolve: (arg0: any) => void; reject: (arg0: any) => void }
-    >;
-    private _requestId: number;
-    private _id: string;
-    private _targetBased: boolean;
-    private _targetId: string | null;
-
-    constructor(targetId: string, data?: ITarget) {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Target = void 0;
+const WebSocket = require("ws");
+const events_1 = require("events");
+const logger_1 = require("../logger");
+const createDebug = require("debug");
+class Target extends events_1.EventEmitter {
+    constructor(targetId, data) {
         super();
         this._data = data;
         this._messageBuffer = [];
-        this._messageFilters = new Map<
-            string,
-            ((msg: any) => Promise<any>)[]
-        >();
-        this._toolRequestMap = new Map<number, string>();
-        this._adapterRequestMap = new Map<
-            number,
-            { resolve: (arg0: any) => void; reject: (arg0: any) => void }
-        >();
+        this._messageFilters = new Map();
+        this._toolRequestMap = new Map();
+        this._adapterRequestMap = new Map();
         this._requestId = 0;
         this._targetBased = false;
         this._targetId = null;
-
         // Chrome currently uses id, iOS usies appId
         this._id = targetId;
     }
-
-    public get data(): ITarget | undefined {
+    get data() {
         return this._data;
     }
-
-    public set targetBased(isTargetBased: boolean) {
+    set targetBased(isTargetBased) {
         this._targetBased = isTargetBased;
     }
-
-    public set targetId(targetId: string) {
+    set targetId(targetId) {
         this._targetId = targetId;
     }
-
-    public connectTo(url: string, wsFrom: WebSocket): void {
+    connectTo(url, wsFrom) {
         if (this._wsTarget) {
-            Logger.error(`Already connected`);
+            logger_1.Logger.error(`Already connected`);
             return;
         }
-
         this._url = url;
         this._wsTools = wsFrom;
-
         // Create a connection to the real websocket endpoint
         this._wsTarget = new WebSocket(url);
         this._wsTarget.on("error", (err) => {
             createDebug("socket.error")(err);
         });
-
         this._wsTarget.on("message", (message) => {
             this.onMessageFromTarget(message.toString());
         });
@@ -90,43 +59,34 @@ export class Target extends EventEmitter {
             createDebug("socket.close")("Socket is closed");
         });
     }
-
-    public forward(message: string): void {
+    forward(message) {
         if (!this._wsTarget) {
-            Logger.error("No websocket endpoint found");
+            logger_1.Logger.error("No websocket endpoint found");
             return;
         }
-
         this.onMessageFromTools(message);
     }
-
-    public updateClient(wsFrom: WebSocket): void {
+    updateClient(wsFrom) {
         if (this._wsTarget) {
             this._wsTarget.close();
         }
         this._wsTarget = null;
         this._url && this.connectTo(this._url, wsFrom);
     }
-
-    public addMessageFilter(
-        method: string,
-        filter: (msg: any) => Promise<any>
-    ): void {
+    addMessageFilter(method, filter) {
+        var _a;
         if (!this._messageFilters.has(method)) {
             this._messageFilters.set(method, []);
         }
-
-        this._messageFilters.get(method)?.push(filter);
+        (_a = this._messageFilters.get(method)) === null || _a === void 0 ? void 0 : _a.push(filter);
     }
-
-    public callTarget(method: string, params: any): Promise<any> {
+    callTarget(method, params) {
         return new Promise((resolve, reject) => {
             const request = {
                 id: --this._requestId,
                 method: method,
                 params: params,
             };
-
             this._adapterRequestMap.set(request.id, {
                 resolve: resolve,
                 reject: reject,
@@ -134,53 +94,43 @@ export class Target extends EventEmitter {
             this.sendToTarget(JSON.stringify(request));
         });
     }
-
-    public fireEventToTools(method: string, params: any): void {
+    fireEventToTools(method, params) {
         const response = {
             method: method,
             params: params,
         };
-
         this.sendToTools(JSON.stringify(response));
     }
-
-    public fireResultToTools(id: number, params: any): void {
+    fireResultToTools(id, params) {
         const response = {
             id: id,
             result: params,
         };
-
         this.sendToTools(JSON.stringify(response));
     }
-
-    public replyWithEmpty(msg: any): Promise<any> {
+    replyWithEmpty(msg) {
         this.fireResultToTools(msg.id, {});
         return Promise.resolve(null);
     }
-
-    private onMessageFromTools(rawMessage: string): void {
+    onMessageFromTools(rawMessage) {
+        var _a;
         createDebug("message.tools")(rawMessage);
         if (!this._isConnected) {
-            debug("Connection not yet open, buffering message.");
+            logger_1.debug("Connection not yet open, buffering message.");
             this._messageBuffer.push(rawMessage);
             return;
         }
-
         const msg = JSON.parse(rawMessage);
         const eventName = `tools::${msg.method}`;
-
         this._toolRequestMap.set(msg.id, msg.method);
         this.emit(eventName, msg.params);
-
         if (this._messageFilters.has(eventName)) {
             let sequence = Promise.resolve(msg);
-
-            this._messageFilters.get(eventName)?.forEach((filter) => {
+            (_a = this._messageFilters.get(eventName)) === null || _a === void 0 ? void 0 : _a.forEach((filter) => {
                 sequence = sequence.then((filteredMessage) => {
                     return filter(filteredMessage);
                 });
             });
-
             sequence.then((filteredMessage) => {
                 // Only send on the message if it wasn't completely filtered out
                 if (filteredMessage) {
@@ -188,16 +138,16 @@ export class Target extends EventEmitter {
                     this.sendToTarget(rawMessage);
                 }
             });
-        } else {
+        }
+        else {
             // Pass it on to the target
             this.sendToTarget(rawMessage);
         }
     }
-
-    private onMessageFromTarget(rawMessage: string): void {
+    onMessageFromTarget(rawMessage) {
+        var _a, _b;
         createDebug("message.raw")(rawMessage);
         let msg = JSON.parse(rawMessage);
-
         if (this._targetBased) {
             if (!msg.method || !msg.method.match(/^Target/)) {
                 return;
@@ -207,89 +157,80 @@ export class Target extends EventEmitter {
                 msg = JSON.parse(rawMessage);
             }
         }
-
         if ("id" in msg) {
             if (this._toolRequestMap.has(msg.id)) {
                 // Reply to tool request
                 let eventName = `target::${this._toolRequestMap.get(msg.id)}`;
                 this.emit(eventName, msg.params);
-
                 this._toolRequestMap.delete(msg.id);
-
-                if (
-                    "error" in msg &&
-                    this._messageFilters.has("target::error")
-                ) {
+                if ("error" in msg &&
+                    this._messageFilters.has("target::error")) {
                     eventName = "target::error";
                 }
-
                 if (this._messageFilters.has(eventName)) {
                     let sequence = Promise.resolve(msg);
-
-                    this._messageFilters.get(eventName)?.forEach((filter) => {
+                    (_a = this._messageFilters.get(eventName)) === null || _a === void 0 ? void 0 : _a.forEach((filter) => {
                         sequence = sequence.then((filteredMessage) => {
                             return filter(filteredMessage);
                         });
                     });
-
                     sequence.then((filteredMessage) => {
                         rawMessage = JSON.stringify(filteredMessage);
                         this.sendToTools(rawMessage);
                     });
-                } else {
+                }
+                else {
                     // Pass it on to the tools
                     this.sendToTools(rawMessage);
                 }
-            } else if (this._adapterRequestMap.has(msg.id)) {
+            }
+            else if (this._adapterRequestMap.has(msg.id)) {
                 // Reply to adapter request
                 const resultPromise = this._adapterRequestMap.get(msg.id);
                 this._adapterRequestMap.delete(msg.id);
-
                 if ("result" in msg) {
-                    resultPromise?.resolve(msg.result);
-                } else if ("error" in msg) {
-                    resultPromise?.reject(msg.error);
-                } else {
-                    Logger.error(
-                        `Unhandled type of request message from target ${rawMessage}`
-                    );
+                    resultPromise === null || resultPromise === void 0 ? void 0 : resultPromise.resolve(msg.result);
                 }
-            } else {
-                Logger.error(`Unhandled message from target ${rawMessage}`);
+                else if ("error" in msg) {
+                    resultPromise === null || resultPromise === void 0 ? void 0 : resultPromise.reject(msg.error);
+                }
+                else {
+                    logger_1.Logger.error(`Unhandled type of request message from target ${rawMessage}`);
+                }
             }
-        } else {
+            else {
+                logger_1.Logger.error(`Unhandled message from target ${rawMessage}`);
+            }
+        }
+        else {
             const eventName = `target::${msg.method}`;
             this.emit(eventName, msg);
-
             if (this._messageFilters.has(eventName)) {
                 let sequence = Promise.resolve(msg);
-
-                this._messageFilters.get(eventName)?.forEach((filter) => {
+                (_b = this._messageFilters.get(eventName)) === null || _b === void 0 ? void 0 : _b.forEach((filter) => {
                     sequence = sequence.then((filteredMessage) => {
                         return filter(filteredMessage);
                     });
                 });
-
                 sequence.then((filteredMessage) => {
                     rawMessage = JSON.stringify(filteredMessage);
                     this.sendToTools(rawMessage);
                 });
-            } else {
+            }
+            else {
                 // Pass it on to the tools
                 this.sendToTools(rawMessage);
             }
         }
     }
-
-    private sendToTools(rawMessage: string): void {
+    sendToTools(rawMessage) {
         createDebug("sendTo.tools")(rawMessage);
         // Make sure the tools socket can receive messages
         if (this._wsTools && this.isSocketConnected(this._wsTools)) {
             this._wsTools.send(rawMessage);
         }
     }
-
-    private sendToTarget(rawMessage: string): void {
+    sendToTarget(rawMessage) {
         createDebug("sendTo.target")(rawMessage);
         if (this._targetBased) {
             const message = JSON.parse(rawMessage);
@@ -307,18 +248,18 @@ export class Target extends EventEmitter {
                 createDebug("sendTo.target.targeted")(rawMessage);
             }
         }
-
         // Make sure the target socket can receive messages
         if (this._wsTarget && this.isSocketConnected(this._wsTarget)) {
             this._wsTarget.send(rawMessage);
-        } else {
+        }
+        else {
             // The socket has closed, we should send this message up to the parent
             this._wsTarget = null;
             this.emit("socketClosed", this._id);
         }
     }
-
-    private isSocketConnected(ws: WebSocket): boolean {
+    isSocketConnected(ws) {
         return ws && ws.readyState === WebSocket.OPEN;
     }
 }
+exports.Target = Target;
